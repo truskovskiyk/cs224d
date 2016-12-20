@@ -8,10 +8,8 @@ from q4_softmaxreg import softmaxRegression, getSentenceFeature, accuracy, softm
 
 # Try different regularizations and pick the best!
 # NOTE: fill in one more "your code here" below before running!
-REGULARIZATION = None   # Assign a list of floats in the block below
-### YOUR CODE HERE
-raise NotImplementedError
-### END YOUR CODE
+# Assign a list of floats in the block below
+REGULARIZATION = [0.0, 0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01]
 
 # Load the dataset
 dataset = StanfordSentiment()
@@ -85,9 +83,13 @@ print ""
 BEST_REGULARIZATION = None
 BEST_WEIGHTS = None
 
-### YOUR CODE HERE 
-raise NotImplementedError
-### END YOUR CODE
+best_dev = 0
+for result in results:
+    if result["dev"] > best_dev:
+        best_dev = result["dev"]
+        BEST_REGULARIZATION = result["reg"]
+        BEST_WEIGHTS = result["weights"]
+
 
 # Test your findings on the test set
 testset = dataset.getTestSentences()

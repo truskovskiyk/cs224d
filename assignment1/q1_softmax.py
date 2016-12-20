@@ -1,5 +1,5 @@
 import numpy as np
-import random
+
 
 def softmax(x):
     """
@@ -19,12 +19,11 @@ def softmax(x):
     You must implement the optimization in problem 1(a) of the 
     written assignment!
     """
+    if len(x.shape) == 1:
+        x = x.reshape(1, x.shape[0])
+    exponent = np.exp(x - x.max(axis=1, keepdims=True))
+    return exponent / exponent.sum(axis=1, keepdims=True)
 
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
-    
-    return x
 
 def test_softmax_basic():
     """
@@ -49,6 +48,7 @@ def test_softmax_basic():
 
     print "You should verify these results!\n"
 
+
 def test_softmax():
     """ 
     Use this space to test your softmax implementation by running:
@@ -57,9 +57,7 @@ def test_softmax():
     your tests be graded.
     """
     print "Running your tests..."
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE  
+    pass
 
 if __name__ == "__main__":
     test_softmax_basic()

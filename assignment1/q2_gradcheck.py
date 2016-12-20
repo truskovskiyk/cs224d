@@ -1,6 +1,7 @@
 import numpy as np
 import random
 
+
 # First implement a gradient checker by filling in the following functions
 def gradcheck_naive(f, x):
     """ 
@@ -22,10 +23,14 @@ def gradcheck_naive(f, x):
         ### try modifying x[ix] with h defined above to compute numerical gradients
         ### make sure you call random.setstate(rndstate) before calling f(x) each time, this will make it 
         ### possible to test cost functions with built in randomness later
-        ### YOUR CODE HERE:
-        raise NotImplementedError
-        ### END YOUR CODE
-
+        x[ix] += h # increment by h
+        random.setstate(rndstate)
+        fxh, _ = f(x) # evalute f(x + h)
+        x[ix] -= 2 * h # restore to previous value (very important!)
+        random.setstate(rndstate)
+        fxnh, _ = f(x)
+        x[ix] += h
+        numgrad = (fxh - fxnh) / 2 / h
         # Compare gradients
         reldiff = abs(numgrad - grad[ix]) / max(1, abs(numgrad), abs(grad[ix]))
         if reldiff > 1e-5:
@@ -37,6 +42,7 @@ def gradcheck_naive(f, x):
         it.iternext() # Step to next dimension
 
     print "Gradient check passed!"
+
 
 def sanity_check():
     """
@@ -50,6 +56,7 @@ def sanity_check():
     gradcheck_naive(quad, np.random.randn(4,5))   # 2-D test
     print ""
 
+
 def your_sanity_checks(): 
     """
     Use this space add any additional sanity checks by running:
@@ -58,9 +65,7 @@ def your_sanity_checks():
     your additional tests be graded.
     """
     print "Running your sanity checks..."
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    pass
 
 if __name__ == "__main__":
     sanity_check()
