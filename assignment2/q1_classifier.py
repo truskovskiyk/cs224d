@@ -21,7 +21,7 @@ class Config(object):
   # You may adjust the max_epochs to ensure convergence.
   max_epochs = 50
   # You may adjust this learning rate to ensure convergence.
-  lr = 1e-4 
+  lr = 1e-3
 
 class SoftmaxModel(Model):
   """Implements a Softmax classifier with cross-entropy loss."""
@@ -53,9 +53,17 @@ class SoftmaxModel(Model):
 
     (Don't change the variable names)
     """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+
+    self.input_placeholder = tf.placeholder(
+        dtype=tf.float32,
+        shape=(self.config.batch_size, self.config.n_features),
+        name='input_placeholder')
+
+    self.labels_placeholder = tf.placeholder(
+        dtype=tf.int32,
+        shape=(self.config.batch_size, self.config.n_classes),
+        name='labels_placeholder')
+
 
   def create_feed_dict(self, input_batch, label_batch):
     """Creates the feed_dict for softmax classifier.
@@ -78,9 +86,12 @@ class SoftmaxModel(Model):
     Returns:
       feed_dict: The feed dictionary mapping from placeholders to values.
     """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+
+    feed_dict = {
+        self.input_placeholder: input_batch,
+        self.labels_placeholder: label_batch
+    }
+
     return feed_dict
 
   def add_training_op(self, loss):
@@ -102,9 +113,7 @@ class SoftmaxModel(Model):
     Returns:
       train_op: The Op for training.
     """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    train_op = tf.train.GradientDescentOptimizer(learning_rate=self.config.lr).minimize(loss)
     return train_op
 
   def add_model(self, input_data):
@@ -126,9 +135,9 @@ class SoftmaxModel(Model):
     Returns:
       out: A tensor of shape (batch_size, n_classes)
     """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    W = tf.Variable(tf.random_normal((self.config.n_features, self.config.n_classes)), name="W")
+    b = tf.Variable(tf.random_normal((1, self.config.n_classes)), name="b")
+    out = softmax(tf.matmul(input_data, W) + b)
     return out
 
   def add_loss_op(self, pred):
@@ -141,9 +150,8 @@ class SoftmaxModel(Model):
     Returns:
       loss: A 0-d tensor (scalar)
     """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+
+    loss = cross_entropy_loss(self.labels_placeholder, pred)
     return loss
 
   def run_epoch(self, sess, input_data, input_labels):
@@ -227,7 +235,7 @@ def test_SoftmaxModel():
     # Run the Op to initialize the variables.
     init = tf.initialize_all_variables()
     sess.run(init)
-  
+    print "start "
     losses = model.fit(sess, model.input_data, model.input_labels)
 
   # If ops are implemented correctly, the average loss should fall close to zero

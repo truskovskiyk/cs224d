@@ -28,6 +28,7 @@ class Config(object):
   lr = 0.001
   l2 = 0.001
   window_size = 3
+  debug = False
 
 class NERModel(LanguageModel):
   """Implements a NER (Named Entity Recognition) model.
@@ -37,7 +38,7 @@ class NERModel(LanguageModel):
   the standard Model method.
   """
 
-  def load_data(self, debug=False):
+  def load_data(self, debug):
     """Loads starter word-vectors and train/dev/test data."""
     # Load the starter word vectors
     self.wv, word_to_num, num_to_word = ner.load_wv(
@@ -91,9 +92,9 @@ class NERModel(LanguageModel):
 
     (Don't change the variable names)
     """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    self.input_placeholder = tf.placeholder(dtype=tf.int32, shape=[None, self.config.window_size], name='input')
+    self.labels_placeholder = tf.placeholder(dtype=tf.float32, shape=[None, self.config.label_size], name='labels')
+    self.dropout_placeholder = tf.placeholder(dtype=tf.float32, name='dropout')
 
   def create_feed_dict(self, input_batch, dropout, label_batch=None):
     """Creates the feed_dict for softmax classifier.
@@ -116,9 +117,12 @@ class NERModel(LanguageModel):
     Returns:
       feed_dict: The feed dictionary mapping from placeholders to values.
     """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    feed_dict = {
+        self.input_placeholder: input_batch,
+        self.dropout_placeholder: dropout,
+    }
+    if label_batch is not None:
+        feed_dict[self.labels_placeholder] = label_batch
     return feed_dict
 
   def add_embedding(self):
@@ -146,11 +150,20 @@ class NERModel(LanguageModel):
       window: tf.Tensor of shape (-1, window_size*embed_size)
     """
     # The embedding lookup is currently only implemented for the CPU
+    vocabulary_size = len(self.wv)
+    embed_size = self.config.embed_size
+    window_size = self.config.window_size
+
     with tf.device('/cpu:0'):
-      ### YOUR CODE HERE
-      raise NotImplementedError
-      ### END YOUR CODE
-      return window
+      with tf.variable_scope("embedding_layer"):
+        embeddings = tf.get_variable("L", [vocabulary_size, embed_size],
+                                         initializer=xavier_weight_init())
+
+        embed = tf.nn.embedding_lookup(embeddings, self.input_placeholder)
+        window = tf.reshape(embed, shape=(-1, window_size * embed_size))
+
+    return window
+
 
   def add_model(self, window):
     """Adds the 1-hidden-layer NN.
@@ -179,10 +192,34 @@ class NERModel(LanguageModel):
     Returns:
       output: tf.Tensor of shape (batch_size, label_size)
     """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
-    return output 
+    window_size = self.config.window_size
+    embed_size = self.config.embed_size
+    hidden_size = self.config.hidden_size
+    label_size = self.config.label_size
+
+    with tf.variable_scope('Layer'):
+        W = tf.get_variable('W', shape=(window_size*embed_size, hidden_size),
+                            initializer=xavier_weight_init())
+        b1 = tf.get_variable('b1', shape=(hidden_size,),
+                             initializer=tf.constant_initializer(0.0))
+        self.W = W
+
+    with tf.variable_scope('Softmax'):
+        U = tf.get_variable('U', shape=(hidden_size, label_size),
+                            initializer=xavier_weight_init())
+        b2 = tf.get_variable('b2', shape=(label_size),
+                             initializer=tf.constant_initializer(0.0))
+        self.U = U
+
+    z1 = tf.matmul(window, W) + b1
+    h1 = tf.tanh(z1)
+    h1 = tf.nn.dropout(h1, self.dropout_placeholder)
+
+    z2 = tf.matmul(h1, U) + b2
+    z2 = tf.nn.dropout(z2, self.dropout_placeholder)
+    output = z2
+
+    return output
 
   def add_loss_op(self, y):
     """Adds cross_entropy_loss ops to the computational graph.
@@ -194,9 +231,11 @@ class NERModel(LanguageModel):
     Returns:
       loss: A 0-d tensor (scalar)
     """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    train_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+        logits=y, labels=self.labels_placeholder))
+    reg_loss = (self.config.l2 / 2) * (tf.reduce_sum(self.W ** 2) +
+                                       tf.reduce_sum(self.U ** 2))
+    loss = train_loss + reg_loss
     return loss
 
   def add_training_op(self, loss):
@@ -218,15 +257,14 @@ class NERModel(LanguageModel):
     Returns:
       train_op: The Op for training.
     """
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+
+    train_op = tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss)
     return train_op
 
   def __init__(self, config):
     """Constructs the network using the helper functions defined above."""
     self.config = config
-    self.load_data(debug=False)
+    self.load_data(debug=self.config.debug)
     self.add_placeholders()
     window = self.add_embedding()
     y = self.add_model(window)

@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
+
 def softmax(x):
   """
   Compute the softmax function in tensorflow.
@@ -21,11 +22,12 @@ def softmax(x):
          tensor in this problem.
   """
 
-  ### YOUR CODE HERE
-  raise NotImplementedError
-  ### END YOUR CODE
-  
-  return out 
+  if len(x.get_shape()) == 1:
+    x = tf.expand_dims(x, axis=0)
+  x_exp = tf.exp(x - tf.reduce_max(x, axis=1, keep_dims=True))
+  out = x_exp / tf.reduce_sum(x_exp, axis=1, keep_dims=True)
+  return out
+
 
 def cross_entropy_loss(y, yhat):
   """
@@ -49,9 +51,7 @@ def cross_entropy_loss(y, yhat):
     out:  tf.Tensor with shape (1,) (Scalar output). You need to construct this
           tensor in the problem.
   """
-  ### YOUR CODE HERE
-  raise NotImplementedError
-  ### END YOUR CODE
+  out = - tf.reduce_sum(tf.to_float(y) * tf.log(yhat))
   return out
 
 
@@ -61,21 +61,31 @@ def test_softmax_basic():
   Warning: these are not exhaustive.
   """
   print "Running basic tests..."
-  test1 = softmax(tf.convert_to_tensor(
-      np.array([[1001,1002],[3,4]]), dtype=tf.float32))
+  test1 = softmax(tf.convert_to_tensor(np.array([[1001, 1002], [3, 4]]),
+                                       dtype=tf.float32))
   with tf.Session():
       test1 = test1.eval()
-  assert np.amax(np.fabs(test1 - np.array(
-      [0.26894142,  0.73105858]))) <= 1e-6
+  assert np.amax(np.fabs(test1 - np.array([0.26894142,  0.73105858]))) <= 1e-6
 
-  test2 = softmax(tf.convert_to_tensor(
-      np.array([[-1001,-1002]]), dtype=tf.float32))
+  test2 = softmax(tf.convert_to_tensor(np.array([[-1001, -1002]]),
+                                       dtype=tf.float32))
   with tf.Session():
       test2 = test2.eval()
-  assert np.amax(np.fabs(test2 - np.array(
-      [0.73105858, 0.26894142]))) <= 1e-6
+  assert np.amax(np.fabs(test2 - np.array([0.73105858, 0.26894142]))) <= 1e-6
 
   print "Basic (non-exhaustive) softmax tests pass\n"
+  test3_input = np.random.rand(100)
+  with tf.Session() as sess:
+    test3_out = softmax(tf.convert_to_tensor(test3_input))
+    test3_expected = tf.nn.softmax(tf.convert_to_tensor(test3_input))
+    assert np.allclose(sess.run(test3_out), sess.run(test3_expected))
+
+  test4_input = np.random.rand(100).reshape(10, 10)
+  with tf.Session() as sess:
+    test4_out = softmax(tf.convert_to_tensor(test4_input))
+    test4_expected = tf.nn.softmax(tf.convert_to_tensor(test4_input))
+    assert np.allclose(sess.run(test4_out), sess.run(test4_expected))
+
 
 def test_cross_entropy_loss_basic():
   """
@@ -88,6 +98,8 @@ def test_cross_entropy_loss_basic():
   test1 = cross_entropy_loss(
       tf.convert_to_tensor(y, dtype=tf.int32),
       tf.convert_to_tensor(yhat, dtype=tf.float32))
+  with tf.Session() as sess:
+      print sess.run(test1)
   with tf.Session():
     test1 = test1.eval()
   result = -3 * np.log(.5)
